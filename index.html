@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Jogo PPP</title>
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f4f4f9;
+      color: #333;
+    }
+    header {
+      background-color: #6c63ff;
+      color: white;
+      padding: 20px;
+      text-align: center;
+    }
+    h1, h2, h3 {
+      margin: 0 0 10px;
+    }
+    h1 {
+      font-size: 2rem;
+    }
+    .container {
+      max-width: 800px;
+      margin: 20px auto;
+      padding: 20px;
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    .setup-section {
+      margin-bottom: 20px;
+    }
+    label, input, button {
+      display: block;
+      margin: 10px 0;
+    }
+    input[type="text"], input[type="file"] {
+      width: 100%;
+      padding: 10px;
+      font-size: 1rem;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+    button {
+      background-color: #6c63ff;
+      color: white;
+      border: none;
+      padding: 10px;
+      font-size: 1rem;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    button:hover {
+      background-color: #5750d1;
+    }
+    ul {
+      list-style: none;
+      padding: 0;
+    }
+    ul li {
+      margin: 5px 0;
+    }
+    .fulana-image {
+      width: 100%;
+      max-width: 300px;
+      height: auto;
+      border-radius: 10px;
+      margin: 10px auto;
+    }
+    .game-section {
+      text-align: center;
+    }
+    .choices {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+    }
+    .choices button {
+      flex: 1;
+      padding: 10px;
+    }
+    .relatorio {
+      margin: 20px auto;
+      text-align: left;
+    }
+    .relatorio h3 {
+      margin-top: 20px;
+      border-bottom: 1px solid #ccc;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Jogo PPP</h1>
+  </header>
+  <div class="container" id="setup-container">
+    <h2>Configuração do Jogo</h2>
+    <div class="setup-section" id="player-setup">
+      <h3>Adicionar Jogadores</h3>
+      <input type="text" id="player-name" placeholder="Nome do jogador">
+      <button onclick="addPlayer()">Adicionar Jogador</button>
+      <ul id="player-list"></ul>
+    </div>
+    <div class="setup-section" id="fulana-setup">
+      <h3>Adicionar Fulanas</h3>
+      <input type="file" id="fulana-image" accept="image/*">
+      <input type="text" id="fulana-name" placeholder="Nome da fulana">
+      <button onclick="addFulana()">Adicionar Fulana</button>
+      <ul id="fulana-list"></ul>
+    </div>
+    <button onclick="startGame()">Iniciar Jogo</button>
+  </div>
+
+  <div class="container" id="game-container" style="display: none;"></div>
+  <div class="container" id="report-container" style="display: none;"></div>
+
+  <script>
+    const players = [];
+    const fulanas = [];
+    const results = [];
+    let currentFulanaIndex = 0;
+    let currentPlayerIndex = 0;
+
+    function addPlayer() {
+      const playerNameInput = document.getElementById('player-name');
+      const playerName = playerNameInput.value.trim();
+      if (playerName) {
+        players.push(playerName);
+        const playerList = document.getElementById('player-list');
+        const li = document.createElement('li');
+        li.textContent = playerName;
+        playerList.appendChild(li);
+        playerNameInput.value = '';
+      } else {
+        alert('Por favor, insira o nome do jogador!');
+      }
+    }
+
+    function addFulana() {
+      const fulanaNameInput = document.getElementById('fulana-name');
+      const fulanaImageInput = document.getElementById('fulana-image');
+      const fulanaName = fulanaNameInput.value.trim();
+      const fulanaImage = fulanaImageInput.files[0];
+
+      if (fulanaName && fulanaImage) {
+        const reader = new FileReader();
+        reader.onload = function (event) {
+          fulanas.push({ name: fulanaName, image: event.target.result });
+          const fulanaList = document.getElementById('fulana-list');
+          const li = document.createElement('li');
+          li.innerHTML = `
+            <img src="${event.target.result}" alt="${fulanaName}" class="fulana-image">
+            ${fulanaName}
+          `;
+          fulanaList.appendChild(li);
+          fulanaNameInput.value = '';
+          fulanaImageInput.value = '';
+        };
+        reader.readAsDataURL(fulanaImage);
+      } else {
+        alert('Por favor, insira um nome e selecione uma imagem!');
+      }
+    }
+
+    function startGame() {
+      if (players.length === 0 || fulanas.length === 0) {
+        alert('Adicione pelo menos um jogador e uma fulana para começar o jogo!');
+        return;
+      }
+      document.getElementById('setup-container').style.display = 'none';
+      document.getElementById('game-container').style.display = 'block';
+      results.length = 0;
+      showNextQuestion();
+    }
+
+    function showNextQuestion() {
+      if (currentFulanaIndex < fulanas.length) {
+        const fulana = fulanas[currentFulanaIndex];
+        const player = players[currentPlayerIndex];
+
+        const container = document.getElementById('game-container');
+        container.innerHTML = `
+          <div class="game-section">
+            <h2>${fulana.name} - Pergunta para ${player}</h2>
+            <img src="${fulana.image}" alt="${fulana.name}" class="fulana-image">
+            <div class="choices">
+              <button onclick="handleChoice('Pega')">PEGA</button>
+              <button onclick="handleChoice('Passo')">PASSO</button>
+              <button onclick="handleChoice('Penso')">PENSO</button>
+            </div>
+          </div>
+        `;
+      } else {
+        endGame();
+      }
+    }
+
+    function handleChoice(choice) {
+      const player = players[currentPlayerIndex];
+      const fulana = fulanas[currentFulanaIndex];
+
+      results.push({ player, fulana: fulana.name, choice });
+
+      currentPlayerIndex++;
+      if (currentPlayerIndex >= players.length) {
+        currentPlayerIndex = 0;
+        currentFulanaIndex++;
+      }
+      showNextQuestion();
+    }
+
+    function endGame() {
+      document.getElementById('game-container').style.display = 'none';
+      const reportContainer = document.getElementById('report-container');
+      reportContainer.style.display = 'block';
+      const reportHTML = results.map(result => `
+        <div class="relatorio">
+          <h3>${result.player} sobre ${result.fulana}</h3>
+          <p>Escolha: ${result.choice}</p>
+        </div>
+      `).join('');
+      reportContainer.innerHTML = `
+        <h2>Relatório do Jogo</h2>
+        ${reportHTML}
+        <button onclick="resetGame()">Jogar Novamente</button>
+      `;
+    }
+
+    function resetGame() {
+      currentFulanaIndex = 0;
+      currentPlayerIndex = 0;
+      results.length = 0;
+
+      document.getElementById('setup-container').style.display = 'block';
+      document.getElementById('game-container').style.display = 'none';
+      document.getElementById('report-container').style.display = 'none';
+
+      document.getElementById('player-list').innerHTML = '';
+      document.getElementById('fulana-list').innerHTML = '';
+      players.length = 0;
+      fulanas.length = 0;
+    }
+  </script>
+</body>
+</html>
